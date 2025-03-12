@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* Ta bort skalning och bredd från html */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: hidden;
+      width: 100%;
+      height: 100%;
+    }
+
+.wrapper {
+  transform: scale(0.8);
+  transform-origin: top left;
+  width: calc(100% / 0.8); /* Detta sätter bredden korrekt */
+  /* Försök även att sätta höjden dynamiskt eller min-height om möjligt */
+  min-height: calc(100vh / 0.8);
+}
+
+    /* Global styling – kompakta mått med mindre mellanrum */
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #eee;
+      padding: 10px;
+      text-align: center;
+      font-size: 13px;
+    }
+    h1, h2, h5 {
+      margin: 7px 0;
+    }
+h5 {
+  transform: translateY(-3px);
+}
+    /* Exempel på logga */
+    #logo {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-align: center;
+      margin: 0px;
+      background: radial-gradient(circle at center, #ffffff 0%, #ffffff 30%, #FFA500 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+      transition: transform 0.3s ease;
+    }
+    .section {
+      margin: 5px;
+      padding: 5px;
+      background: #333;
+      border-radius: 6px;
+    }
+    /* Gemensam inställning för alla sequencer-containrar – ökad padding för extra luft runt om */
+    .sequencer-container {
+      flex: 1;
+      background: #444;
+      padding: 16px;
+      border-radius: 3px;
+      position: relative;
+      min-height: 250px;
+    }
+    /* Sätt en fast höjd på synthsektionens wrapper */
+    #synth-section .sequencer-wrapper {
+      height: 440px;
+      box-sizing: border-box;
+    }
+    /* Gör så att både kontrollpanelen och sequencern fyller hela höjden */
+    #synth-section .sequencer-controls,
+    #synth-section .sequencer-container {
+      height: 100%;
+      box-sizing: border-box;
+    }
+    /* SYNTH-sektionen – layout i två kolumner */
+    .sequencer-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 10px;
+      margin-top: 5px;
+    }
+    .sequencer-controls {
+      background: #444;
+      padding: 8px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .control-group label {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    /* Använd grid för formdelsknappar med 8 kolumner */
+    .sectionPart {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+    }
+    .sequencer-controls button,
+    .sequencer-controls input,
+    .sequencer-controls select,
+    .sectionPart button {
+      padding: 4px 8px;
+      font-size: 11px;
+      border: none;
+      border-radius: 3px;
+      background: #555;
+      color: #eee;
+      outline: none;
+    }
+    .sequencer-controls button:hover,
+    .sectionPart button:hover {
+      background: #666;
+      cursor: pointer;
+    }
+    .sectionPart button {
+      width: 30px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .sectionPart button.active {
+      background: #555;
+      color: #eee;
+      border: 2px solid #f39c12 !important;
+    }
+    .track {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .track-label {
+      width: 70px;
+      text-align: right;
+      margin-right: 8px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    /* Grid för sequencers – cellerna är 24px */
+    .sequencer {
+      display: grid;
+      grid-gap: 1px;
+      background: #444;
+      grid-template-columns: repeat(32, 24px);
+      width: 100%;
+      margin: 0;
+    }
+    .step {
+      width: 24px;
+      height: 24px;
+      background: #555;
+      border: 1px solid #333;
+      cursor: pointer;
+      transition: background 0.2s, border 0.2s;
+      position: relative;
+    }
+    .step.active {
+      background: #3498db;
+    }
+    .step.playing {
+      outline: 2px solid #fff;
+      border: 1px solid #333;
+    }
+    .sequencer .step:nth-child(4n)::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: -2px;
+      width: 3px;
+      background: #fff;
+      pointer-events: none;
+    }
+    /* Canvas för synthvisualisering */
+    #canvas {
+      border: 1px solid #444;
+      background: #333;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    /* Globala kontrollknappar – modernare look */
+    .controls {
+      margin: 15px auto 5px;
+      text-align: center;
+    }
+    .controls button {
+      background: linear-gradient(145deg, #444, #333);
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      color: #eee;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+      transition: background 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+      margin: 0 2px;
+    }
+    .controls button:hover {
+      background: linear-gradient(145deg, #555, #444);
+      transform: translateY(-2px);
+    }
+    .grid-container {
+      display: grid;
+      grid-template-areas: 
+        "synth bass"
+        "melody drums";
+      grid-template-columns: 1fr 1fr;
+      grid-gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 20px 20px 0 20px;
+    }
+    #synth-section h2,
+    #bass-section h2,
+    #melody-section h2,
+    #drum-section h2 {
+      text-align: left;
+      margin-left: 10px;
+    }
+    #synth-section { grid-area: synth; }
+    #bass-section  { grid-area: bass; }
+    #melody-section { grid-area: melody; }
+    #drum-section  { grid-area: drums; }
+    #drum-section .sequencer-wrapper {
+      height: 440px;
+    }
+    #bass-section .sequencer-container {
+      min-height: 200px;
+    }
+    #synth-section .sequencer-controls {
+      width: 285px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Allt innehåll placeras inuti wrappern -->
+  <div class="wrapper">
+    <!-- Logga -->
+    <div id="logo">SVP Studio</div>
+    <!-- 2x2-layout -->
+    <div class="grid-container">
+      <!-- SYNTH Section – övre vänster -->
+      <div class="section" id="synth-section">
+        <h2>Synth</h2>
+        <div class="sequencer-wrapper">
+          <div class="sequencer-controls" id="synth-controls">
+            <label for="waveType"><strong>Vågform:</strong></label>
+            <select id="waveType">
+              <option value="none" selected>Ingen Ljudinställning</option>
+              <option value="sine">Sine</option>
+              <option value="square">Square</option>
+              <option value="triangle">Triangle</option>
+              <option value="sawtooth">Sawtooth</option>
+              <option value="pulse">Pulse</option>
+              <option value="white-noise">White Noise</option>
+              <option value="sine+square">Sine + Square</option>
+              <option value="triangle+sawtooth">Triangle + Sawtooth</option>
+              <option value="square+triangle">Square + Triangle</option>
+              <option value="sine+white-noise">Sine + White Noise</option>
+              <option value="sine+triangle">Sine + Triangle</option>
+              <option value="square+sawtooth">Square + Sawtooth</option>
+              <option value="triangle+sine">Triangle + Sine</option>
+              <option value="square+white-noise">Square + White Noise</option>
+              <option value="triangle+white-noise">Triangle + White Noise</option>
+              <option value="sine+sawtooth">Sine + Sawtooth</option>
+              <option value="square+sine+triangle">Square + Sine + Triangle</option>
+              <option value="sawtooth+triangle+white-noise">Sawtooth + Triangle + White Noise</option>
+              <option value="sine+square+white-noise">Sine + Square + White Noise</option>
+            </select>
+            <br>
+            <label for="harmonyType"><strong>Intervall:</strong></label>
+            <select id="harmonyType">
+              <option value="none">Ingen Harmonisering</option>
+              <option value="minorSecond">Liten Sekund</option>
+              <option value="majorSecond">Stor Sekund</option>
+              <option value="minorThird">Liten Ters</option>
+              <option value="majorThird">Stor Ters</option>
+              <option value="perfectFourth">Ren Kvart</option>
+              <option value="augFourth">Överstigande Kvart</option>
+              <option value="perfectFifth">Ren Kvint</option>
+              <option value="minorSixth">Liten Sext</option>
+              <option value="majorSixth">Stor Sext</option>
+              <option value="minorSeventh">Liten Septima</option>
+              <option value="majorSeventh">Stor Septima</option>
+              <option value="octave">Ren Oktav</option>
+              <option value="random">Slumpad</option>
+            </select>
+            <br>
+            <div id="volumeControl" style="display: flex; align-items: center;">
+              <label for="volume" style="margin-right: 5px;">Volym:</label>
+              <input type="range" id="volume" min="0" max="1" step="0.01" value="0.03">
+            </div>
+          </div>
+          <div class="sequencer-container">
+            <!-- Här ritas synthvisualiseringen -->
+            <canvas id="canvas"></canvas>
+            <div id="output"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BAS Section – övre höger -->
+      <div class="section" id="bass-section">
+        <h2>Bas</h2>
+        <div class="sequencer-wrapper">
+          <div class="sequencer-controls">
+            <div class="control-group">
+              <button onclick="toggleBassPlay()"><span id="bass-play-button">Spela</span></button>
+              <br>
+              <label for="bass-tempo">Tempo (BPM):</label>
+              <input type="number" id="bass-tempo" min="60" max="200" value="120">
+              <br>
+              <label for="waveform">Ljudtyp:</label>
+              <select id="waveform">
+                <option value="none">Ingen ljudinställning</option>
+                <option value="sine">Sinus</option>
+                <option value="square">Fyrkant</option>
+                <option value="triangle">Triangel</option>
+                <option value="sawtooth">Sågtand</option>
+                <option value="pulse">Pulse</option>
+                <option value="white-noise">White Noise</option>
+              </select>
+              <br>
+              <label for="bass-tone-length">Tonlängd (sek):</label>
+              <input type="number" id="bass-tone-length" min="0.1" max="2" step="0.1" value="0.5">
+              <br>
+              <label for="bass-volume">Volym:</label>
+              <input type="range" id="bass-volume" min="0" max="1" step="0.01" value="0.5">
+            </div>
+            <br>
+            <div class="control-group">
+              <button onclick="bassOctaveUp()">Oktav upp</button>
+              <button onclick="bassOctaveDown()">Oktav ner</button>
+            </div>
+            <div class="control-group">
+              <br>
+              <label>Välj formdel:</label>
+              <div class="sectionPart">
+                <button onclick="switchFormPart('bass', 1)">1</button>
+                <button onclick="switchFormPart('bass', 2)">2</button>
+                <button onclick="switchFormPart('bass', 3)">3</button>
+                <button onclick="switchFormPart('bass', 4)">4</button>
+                <button onclick="switchFormPart('bass', 5)">5</button>
+                <button onclick="switchFormPart('bass', 6)">6</button>
+                <button onclick="switchFormPart('bass', 7)">7</button>
+                <button onclick="switchFormPart('bass', 8)">8</button>
+                <button onclick="switchFormPart('bass', 9)">9</button>
+                <button onclick="switchFormPart('bass', 10)">10</button>
+                <button onclick="switchFormPart('bass', 11)">11</button>
+                <button onclick="switchFormPart('bass', 12)">12</button>
+                <button onclick="switchFormPart('bass', 13)">13</button>
+                <button onclick="switchFormPart('bass', 14)">14</button>
+                <button onclick="switchFormPart('bass', 15)">15</button>
+                <button onclick="switchFormPart('bass', 16)">16</button>
+              </div>
+            </div>
+          </div>
+          <div class="sequencer-container" id="bass-sequencer"></div>
+        </div>
+      </div>
+
+      <!-- MELODI & ACKORD Section – nedre vänster -->
+      <div class="section" id="melody-section">
+        <h2>Melodi & Ackord</h2>
+        <div class="sequencer-wrapper">
+          <div class="sequencer-controls">
+            <div class="control-group">
+              <button onclick="toggleMelodyPlay()"><span id="melody-play-button">Spela</span></button>
+              <br>
+              <label for="melody-tempo">Tempo (BPM):</label>
+              <input type="number" id="melody-tempo" min="60" max="200" value="120">
+              <br>
+              <label for="melody-waveform">Ljudtyp:</label>
+              <select id="melody-waveform">
+                <option value="none">Ingen ljudinställning</option>
+                <option value="sine">Sinus</option>
+                <option value="square">Fyrkant</option>
+                <option value="triangle">Triangel</option>
+                <option value="sawtooth">Sågtand</option>
+                <option value="pulse">Pulse</option>
+                <option value="white-noise">White Noise</option>
+                <option value="sine+square">Sine + Square</option>
+                <option value="triangle+sawtooth">Triangle + Sawtooth</option>
+                <option value="square+triangle">Square + Triangle</option>
+                <option value="sine+white-noise">Sine + White Noise</option>
+                <option value="sine+triangle">Sine + Triangle</option>
+                <option value="square+sawtooth">Square + Sawtooth</option>
+                <option value="triangle+sine">Triangle + Sine</option>
+                <option value="square+white-noise">Square + White Noise</option>
+                <option value="triangle+white-noise">Triangle + White Noise</option>
+                <option value="sine+sawtooth">Sine + Sawtooth</option>
+                <option value="square+sine+triangle">Square + Sine + Triangle</option>
+                <option value="sawtooth+triangle+white-noise">Sawtooth + Triangle + White Noise</option>
+                <option value="sine+square+white-noise">Sine + Square + White Noise</option>
+              </select>
+              <br>
+              <label for="melody-tone-length">Tonlängd (sek):</label>
+              <input type="number" id="melody-tone-length" min="0.1" max="2" step="0.1" value="0.5">
+              <br>
+              <label for="melody-volume">Volym:</label>
+              <input type="range" id="melody-volume" min="0" max="1" step="0.01" value="0.5">
+            </div>
+            <br>
+            <div class="control-group">
+              <button onclick="melodyOctaveUp()">Oktav upp</button>
+              <button onclick="melodyOctaveDown()">Oktav ner</button>
+            </div>
+            <div class="control-group">
+              <br>
+              <label>Välj formdel:</label>
+              <div class="sectionPart">
+                <button onclick="switchFormPart('melody', 1)">1</button>
+                <button onclick="switchFormPart('melody', 2)">2</button>
+                <button onclick="switchFormPart('melody', 3)">3</button>
+                <button onclick="switchFormPart('melody', 4)">4</button>
+                <button onclick="switchFormPart('melody', 5)">5</button>
+                <button onclick="switchFormPart('melody', 6)">6</button>
+                <button onclick="switchFormPart('melody', 7)">7</button>
+                <button onclick="switchFormPart('melody', 8)">8</button>
+                <button onclick="switchFormPart('melody', 9)">9</button>
+                <button onclick="switchFormPart('melody', 10)">10</button>
+                <button onclick="switchFormPart('melody', 11)">11</button>
+                <button onclick="switchFormPart('melody', 12)">12</button>
+                <button onclick="switchFormPart('melody', 13)">13</button>
+                <button onclick="switchFormPart('melody', 14)">14</button>
+                <button onclick="switchFormPart('melody', 15)">15</button>
+                <button onclick="switchFormPart('melody', 16)">16</button>
+              </div>
+            </div>
+          </div>
+          <div class="sequencer-container" id="melody-sequencer"></div>
+        </div>
+      </div>
+
+      <!-- TRUMMOR Section – nedre höger -->
+      <div class="section" id="drum-section">
+        <h2>Trummor</h2>
+        <div class="sequencer-wrapper">
+          <div class="sequencer-controls">
+            <div class="control-group">
+              <button onclick="toggleDrumPlay()"><span id="drum-play-button">Spela</span></button>
+              <button onclick="clearDrumPattern()">Skapa</button>
+              <button onclick="randomizeDrumPattern()">Slumpa trumkomp</button>
+              <br>
+              <label for="drum-tempo">Tempo (BPM):</label>
+              <input type="number" id="drum-tempo" min="60" max="180" value="120">
+              <br>
+              <label for="drum-volume">Volym:</label>
+              <input type="range" id="drum-volume" min="0" max="1" step="0.01" value="0.5">
+            </div>
+            <div class="control-group">
+              <br><br><br><br><br><br><br><br><br><br><br>
+              <label>Välj formdel:</label>
+              <div class="sectionPart">
+                <button onclick="switchFormPart('drums', 1)">1</button>
+                <button onclick="switchFormPart('drums', 2)">2</button>
+                <button onclick="switchFormPart('drums', 3)">3</button>
+                <button onclick="switchFormPart('drums', 4)">4</button>
+                <button onclick="switchFormPart('drums', 5)">5</button>
+                <button onclick="switchFormPart('drums', 6)">6</button>
+                <button onclick="switchFormPart('drums', 7)">7</button>
+                <button onclick="switchFormPart('drums', 8)">8</button>
+                <button onclick="switchFormPart('drums', 9)">9</button>
+                <button onclick="switchFormPart('drums', 10)">10</button>
+                <button onclick="switchFormPart('drums', 11)">11</button>
+                <button onclick="switchFormPart('drums', 12)">12</button>
+                <button onclick="switchFormPart('drums', 13)">13</button>
+                <button onclick="switchFormPart('drums', 14)">14</button>
+                <button onclick="switchFormPart('drums', 15)">15</button>
+                <button onclick="switchFormPart('drums', 16)">16</button>
+              </div>
+            </div>
+          </div>
+          <div class="sequencer-container">
+            <div class="track">
+              <div class="track-label">Crash</div>
+              <div id="crashRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Extra Crash</div>
+              <div id="extraCrashRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Ride</div>
+              <div id="rideLongRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Ride bell</div>
+              <div id="rideRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Hi-Hat</div>
+              <div id="hiHatRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Hi-Hat alt.</div>
+              <div id="hiHatAltRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Puka Liten</div>
+              <div id="pukaSmallRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Puka Mellan</div>
+              <div id="pukaMediumRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Puka Stor</div>
+              <div id="pukaLargeRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Snare (high)</div>
+              <div id="extraSnareRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Snare</div>
+              <div id="snareRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Kick (high)</div>
+              <div id="extraKickRow" class="sequencer"></div>
+            </div>
+            <div class="track">
+              <div class="track-label">Bass</div>
+              <div id="drumBassRow" class="sequencer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Globala kontroller -->
+    <div class="controls">
+      <button onclick="togglePlayAll()"><span id="play-all-button">Spela alla</span></button>
+      <button onclick="savePattern()">Spara</button>
+      <button onclick="loadPattern()">Ladda</button>
+      <button id="audioRecordButton" onclick="toggleAudioRecording()">Starta Ljudinspelning</button>
+      <button id="screenRecordButton" onclick="toggleScreenRecording()">Starta Skärminspelning</button>
+    </div>
+  
+    <h5 style="margin-top:20px;">goran.wretling@umu.se</h5>
+  </div>
+  
+  <script>
+    /***************************************
+     * Global AudioContext & variabler
+     ***************************************/
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    analyser.connect(audioContext.destination);
+    analyser.fftSize = 2048;
+    const dest = audioContext.createMediaStreamDestination();
+    let isBassPlaying = false, isDrumPlaying = false, isMelodyPlaying = false;
+    let currentBassStep = 0, currentDrumStep = 0, currentMelodyStep = 0;
+    let bassTempo = 120, bassVolume = 0.5, bassWaveform = 'none', bassToneLength = 0.5;
+    let bassIntervalId;
+    let melodyTempo = 120, melodyVolume = 0.5, melodyWaveform = 'none', melodyToneLength = 0.5;
+    let melodyIntervalId;
+    let drumTempo = 120, drumVolume = 0.5, drumIntervalId;
+  
+    /***************************************
+     * Ljudinspelning
+     ***************************************/
+    let isAudioRecording = false;
+    let mediaRecorder; 
+    let recordedChunks = [];
+    function toggleAudioRecording() {
+      if (!isAudioRecording) {
+        startRecording();
+        document.getElementById('audioRecordButton').innerText = "Stoppa Ljudinspelning";
+        isAudioRecording = true;
+      } else {
+        stopRecording();
+        document.getElementById('audioRecordButton').innerText = "Starta Ljudinspelning";
+        isAudioRecording = false;
+      }
+    }
+    function startRecording() {
+      mediaRecorder = new MediaRecorder(dest.stream);
+      recordedChunks = [];
+      mediaRecorder.ondataavailable = event => recordedChunks.push(event.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'audio/mp3' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'synth_output.mp3';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        recordedChunks = [];
+      };
+      mediaRecorder.start();
+      console.log("Ljudinspelning startad.");
+    }
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        console.log("Ljudinspelning stoppad.");
+      }
+    }
+  
+    /***************************************
+     * Skärminspelning
+     ***************************************/
+    let isScreenRecording = false;
+    let skarmRecorder;
+    let skarmChunks = [];
+    function toggleScreenRecording() {
+      if (!isScreenRecording) {
+        startSkärminspelning();
+        document.getElementById('screenRecordButton').innerText = "Stoppa Skärminspelning";
+        isScreenRecording = true;
+      } else {
+        stopSkärminspelning();
+        document.getElementById('screenRecordButton').innerText = "Starta Skärminspelning";
+        isScreenRecording = false;
+      }
+    }
+    async function startSkärminspelning() {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: "always" },
+          audio: true
+        });
+        stream.getAudioTracks().forEach(track => {
+          const label = track.label.toLowerCase();
+          if (label.includes("mic") || label.includes("microphone")) {
+            track.stop();
+            stream.removeTrack(track);
+          }
+        });
+        skarmRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp8,opus' });
+        skarmChunks = [];
+        skarmRecorder.ondataavailable = e => { if (e.data.size > 0) skarmChunks.push(e.data); };
+        skarmRecorder.onstop = () => {
+          const blob = new Blob(skarmChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = 'skarm_inspelning.webm';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          skarmChunks = [];
+        };
+        skarmRecorder.start();
+        console.log("Skärminspelning startad.");
+      } catch (err) {
+        console.error("Misslyckades med skärmdelning: ", err);
+        alert("Kunde inte starta skärminspelning. Behörighet nekad eller ej stöds.");
+      }
+    }
+    function stopSkärminspelning() {
+      if (skarmRecorder && skarmRecorder.state === "recording") {
+        skarmRecorder.stop();
+        console.log("Skärminspelning stoppad.");
+      }
+    }
+  
+    /***************************************
+     * Oktavjustering – relativt med basvärden
+     ***************************************/
+    const baseMelodyNoteFrequencies = {
+      "C": 65.41, "C# / Db": 69.30, "D": 73.42, "D# / Eb": 77.78, "E": 82.41,
+      "F": 87.31, "F# / Gb": 92.50, "G": 98.00, "G# / Ab": 103.83, "A": 110.00,
+      "A# / Bb": 116.54, "B": 123.47, "C2": 130.82
+    };
+    const baseBassFrequencies = {
+      "C": 65.41, "C# / Db": 69.30, "D": 73.42, "D# / Eb": 77.78, "E": 82.41,
+      "F": 87.31, "F# / Gb": 92.50, "G": 98.00, "G# /Ab": 103.83, "A": 110.00,
+      "A# / Bb": 116.54, "B": 123.47, "C2": 130.82
+    };
+    let melodyOctaveOffset = 0;
+    let bassOctaveOffset = 0;
+    function getMelodyFrequency(note) {
+      return baseMelodyNoteFrequencies[note] * Math.pow(2, melodyOctaveOffset);
+    }
+    function getBassFrequency(note) {
+      return baseBassFrequencies[note] * Math.pow(2, bassOctaveOffset);
+    }
+    function melodyOctaveUp() { melodyOctaveOffset++; console.log("Oktaverat upp melodinoter, offset: " + melodyOctaveOffset); }
+    function melodyOctaveDown() { melodyOctaveOffset--; console.log("Oktaverat ner melodinoter, offset: " + melodyOctaveOffset); }
+    function bassOctaveUp() { bassOctaveOffset++; console.log("Oktaverat upp basnoter, offset: " + bassOctaveOffset); }
+    function bassOctaveDown() { bassOctaveOffset--; console.log("Oktaverat ner basnoter, offset: " + bassOctaveOffset); }
+  
+    /***************************************
+     * Definiera vilka meloditoner och basnoter som finns
+     ***************************************/
+    const melodyNotes = ["C2", "B", "A# / Bb", "A", "G# / Ab", "G", "F# / Gb", "F", "E", "D# / Eb", "D", "C# / Db", "C"];
+    const bassNotes = Object.keys(baseBassFrequencies).reverse();
+  
+    /***************************************
+     * Spara / Ladda mönster & formdelar
+     ***************************************/
+    let formParts = {
+      melody: Array(16).fill(null).map(() =>
+                Array(melodyNotes.length).fill(null).map(() => Array(32).fill(0))
+              ),
+      bass: Array(16).fill(null).map(() =>
+              Array(bassNotes.length).fill(null).map(() => Array(32).fill(0))
+            ),
+      drums: {
+        crash: Array(16).fill().map(() => Array(32).fill(0)),
+        extraCrash: Array(16).fill().map(() => Array(32).fill(0)),
+        rideLong: Array(16).fill().map(() => Array(32).fill(0)),
+        ride: Array(16).fill().map(() => Array(32).fill(0)),
+        hiHat: Array(16).fill().map(() => Array(32).fill(0)),
+        hiHatAlt: Array(16).fill().map(() => Array(32).fill(0)),
+        pukaSmall: Array(16).fill().map(() => Array(32).fill(0)),
+        pukaMedium: Array(16).fill().map(() => Array(32).fill(0)),
+        pukaLarge: Array(16).fill().map(() => Array(32).fill(0)),
+        snare: Array(16).fill().map(() => Array(32).fill(0)),
+        extraSnare: Array(16).fill().map(() => Array(32).fill(0)),
+        drumBass: Array(16).fill().map(() => Array(32).fill(0)),
+        extraKick: Array(16).fill().map(() => Array(32).fill(0))
+      }
+    };
+    console.log("Initierade formParts:", JSON.stringify(formParts, null, 2));
+    let currentPart = { melody: 1, bass: 1, drums: 1 };
+  
+    function switchGlobalFormPart(part) {
+      switchFormPart('melody', part);
+      switchFormPart('bass', part);
+      switchFormPart('drums', part);
+      console.log(`Byter till formdel ${part} globalt`);
+    }
+    
+    function deactivateAllFormButtons() {
+      const allButtons = document.querySelectorAll(".sectionPart button, #globalFormPart button");
+      allButtons.forEach(button => button.classList.remove("active"));
+    }
+    
+    function switchFormPart(sequencer, part) {
+      console.log(`Växlar till formdel ${part} för ${sequencer}`);
+      if (sequencer === 'drums') {
+        const drumInstruments = ['crash','extraCrash','rideLong','ride','hiHat','hiHatAlt','pukaSmall','pukaMedium','pukaLarge','snare','extraSnare','drumBass','extraKick'];
+        currentPart.drums = part;
+        drumInstruments.forEach(instrument => {
+          const rowId = `${instrument}Row`;
+          const cells = document.querySelectorAll(`#${rowId} .step`);
+          cells.forEach((cell, index) => {
+            cell.classList.toggle('active', formParts.drums[instrument][part - 1][index] === 1);
+          });
+        });
+      } else if (sequencer === 'melody') {
+        currentPart.melody = part;
+        for (let n = 0; n < melodyNotes.length; n++) {
+          const safeNote = melodyNotes[n].replace(/[^a-zA-Z0-9]/g, "");
+          const rowCells = document.querySelectorAll(`#melody-${safeNote}Row .step`);
+          rowCells.forEach((cell, stepIndex) => {
+            cell.classList.toggle('active', formParts.melody[part - 1][n][stepIndex] === 1);
+          });
+        }
+      } else if (sequencer === 'bass') {
+        currentPart.bass = part;
+        for (let n = 0; n < bassNotes.length; n++) {
+          const safeNote = bassNotes[n].replace(/[^a-zA-Z0-9]/g, "");
+          const rowCells = document.querySelectorAll(`#bass-${safeNote}Row .step`);
+          rowCells.forEach((cell, stepIndex) => {
+            cell.classList.toggle('active', formParts.bass[part - 1][n][stepIndex] === 1);
+          });
+        }
+      }
+      const sectionId = sequencer === 'drums' ? 'drum-section' : `${sequencer}-section`;
+      const buttons = document.querySelectorAll(`#${sectionId} .sectionPart button`);
+      buttons.forEach(button => button.classList.remove("active"));
+      const btn = document.querySelector(`#${sectionId} .sectionPart button:nth-child(${part})`);
+      if(btn) { btn.classList.add("active"); }
+      console.log(`Formdel ${part} för ${sequencer} markerad.`);
+    }
+    
+    function updateFormPartButtons() {
+      const melodyButton = document.querySelector("#melody-section .sectionPart button:nth-child(" + currentPart.melody + ")");
+      if(melodyButton) melodyButton.classList.add("active");
+      const bassButton = document.querySelector("#bass-section .sectionPart button:nth-child(" + currentPart.bass + ")");
+      if(bassButton) bassButton.classList.add("active");
+      const drumButton = document.querySelector("#drum-section .sectionPart button:nth-child(" + currentPart.drums + ")");
+      if(drumButton) drumButton.classList.add("active");
+    }
+    
+    function resetFormPartSelection() {
+      currentPart = { melody: 1, bass: 1, drums: 1 };
+      const formButtons = document.querySelectorAll(".sectionPart button, #globalFormPart button");
+      formButtons.forEach(button => button.classList.remove("active"));
+      console.log("Alla formdelar återställda vid sidladdning.");
+      updateFormPartButtons();
+    }
+    document.addEventListener("DOMContentLoaded", resetFormPartSelection);
+    
+    function savePattern() {
+      const settings = {
+        synth: {
+          waveType: document.getElementById('waveType').value,
+          harmonyType: document.getElementById('harmonyType').value,
+          volume: document.getElementById('volume').value
+        },
+        melody: {
+          tempo: document.getElementById('melody-tempo').value,
+          waveform: document.getElementById('melody-waveform').value,
+          toneLength: document.getElementById('melody-tone-length').value,
+          volume: document.getElementById('melody-volume').value,
+          currentPart: currentPart.melody,
+          octave: melodyOctaveOffset
+        },
+        bass: {
+          tempo: document.getElementById('bass-tempo').value,
+          waveform: document.getElementById('waveform').value,
+          toneLength: document.getElementById('bass-tone-length').value,
+          volume: document.getElementById('bass-volume').value,
+          currentPart: currentPart.bass,
+          octave: bassOctaveOffset
+        },
+        drums: {
+          tempo: document.getElementById('drum-tempo').value,
+          volume: document.getElementById('drum-volume').value,
+          currentPart: currentPart.drums
+        }
+      };
+      const patternData = {
+        settings: settings,
+        pattern: {
+          melody: formParts.melody,
+          bass: formParts.bass,
+          drums: formParts.drums
+        }
+      };
+      const blob = new Blob([JSON.stringify(patternData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'pattern.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    function loadPattern() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = function(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = JSON.parse(e.target.result);
+            applyPattern(data);
+          } catch (err) {
+            console.error("Kunde inte läsa in JSON-data:", err);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+    
+    function applyPattern(data) {
+      if (!data.settings || !data.pattern) {
+        console.error("Ogiltig data – saknar 'settings' eller 'pattern'.");
+        return;
+      }
+      if (data.settings.synth) {
+        const synthSettings = data.settings.synth;
+        document.getElementById('waveType').value = synthSettings.waveType;
+        document.getElementById('harmonyType').value = synthSettings.harmonyType;
+        document.getElementById('volume').value = synthSettings.volume;
+      }
+      if (data.settings.melody) {
+        const melodySettings = data.settings.melody;
+        document.getElementById('melody-tempo').value = melodySettings.tempo;
+        melodyTempo = parseInt(melodySettings.tempo, 10);
+        document.getElementById('melody-waveform').value = melodySettings.waveform;
+        melodyWaveform = melodySettings.waveform;
+        document.getElementById('melody-tone-length').value = melodySettings.toneLength;
+        melodyToneLength = parseFloat(melodySettings.toneLength);
+        document.getElementById('melody-volume').value = melodySettings.volume;
+        melodyVolume = parseFloat(melodySettings.volume);
+        currentPart.melody = parseInt(melodySettings.currentPart, 10) || 1;
+        melodyOctaveOffset = parseInt(melodySettings.octave, 10) || 0;
+      }
+      if (data.settings.bass) {
+        const bassSettings = data.settings.bass;
+        document.getElementById('bass-tempo').value = bassSettings.tempo;
+        bassTempo = parseInt(bassSettings.tempo, 10);
+        document.getElementById('waveform').value = bassSettings.waveform;
+        bassWaveform = bassSettings.waveform;
+        document.getElementById('bass-tone-length').value = bassSettings.toneLength;
+        bassToneLength = parseFloat(bassSettings.toneLength);
+        document.getElementById('bass-volume').value = bassSettings.volume;
+        bassVolume = parseFloat(bassSettings.volume);
+        currentPart.bass = parseInt(bassSettings.currentPart, 10) || 1;
+        bassOctaveOffset = parseInt(bassSettings.octave, 10) || 0;
+      }
+      if (data.settings.drums) {
+        const drumSettings = data.settings.drums;
+        document.getElementById('drum-tempo').value = drumSettings.tempo;
+        drumTempo = parseInt(drumSettings.tempo, 10);
+        document.getElementById('drum-volume').value = drumSettings.volume;
+        drumVolume = parseFloat(drumSettings.volume);
+        currentPart.drums = parseInt(drumSettings.currentPart, 10) || 1;
+      }
+      formParts.melody = data.pattern.melody;
+      formParts.bass = data.pattern.bass;
+      formParts.drums = data.pattern.drums;
+      for (let n = 0; n < melodyNotes.length; n++) {
+        const safeNote = melodyNotes[n].replace(/[^a-zA-Z0-9]/g, "");
+        const rowCells = document.querySelectorAll(`#melody-${safeNote}Row .step`);
+        rowCells.forEach((cell, index) => {
+          cell.classList.toggle('active', formParts.melody[currentPart.melody - 1][n][index] === 1);
+        });
+      }
+      for (let n = 0; n < bassNotes.length; n++) {
+        const safeNote = bassNotes[n].replace(/[^a-zA-Z0-9]/g, "");
+        const rowCells = document.querySelectorAll(`#bass-${safeNote}Row .step`);
+        rowCells.forEach((cell, index) => {
+          cell.classList.toggle('active', formParts.bass[currentPart.bass - 1][n][index] === 1);
+        });
+      }
+      const drumInstruments = ['crash','extraCrash','rideLong','ride','hiHat','hiHatAlt','pukaSmall','pukaMedium','pukaLarge','snare','extraSnare','drumBass','extraKick'];
+      drumInstruments.forEach(instrument => {
+        const cells = document.querySelectorAll(`#${instrument}Row .step`);
+        cells.forEach((cell, index) => {
+          cell.classList.toggle('active', formParts.drums[instrument][currentPart.drums - 1][index] === 1);
+        });
+      });
+      updateFormPartButtons();
+    }
+    
+    if (navigator.requestMIDIAccess) {
+      navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+    } else {
+      console.warn("Web MIDI API ej stödd av denna webbläsare.");
+    }
+    function onMIDISuccess(midiAccess) {
+      const inputs = midiAccess.inputs;
+      inputs.forEach(input => { input.onmidimessage = onMIDIMessages; });
+    }
+    function onMIDIFailure() {
+      console.warn("Kunde inte få åtkomst till MIDI-enheter.");
+    }
+    function onMIDIMessages(message) {
+      const [status, note, velocity] = message.data;
+      if (status === 144 && velocity > 0) {
+        const frequency = 440 * Math.pow(2, (note - 69) / 12);
+        playSound(frequency, document.getElementById('waveType').value);
+        generateHarmony(frequency);
+        document.getElementById("output").innerHTML = `Spelad not: ${note}, Frekvens: ${frequency.toFixed(2)} Hz`;
+      }
+    }
+    
+    // Se till att även MIDI-ljudet spelas in
+    function playSound(frequency, type) {
+      if (!audioContext || type === "none") return;
+      const gain = audioContext.createGain();
+      const volumeControl = document.getElementById('volume');
+      gain.gain.setValueAtTime(volumeControl.value, audioContext.currentTime);
+      if (type.includes('+')) {
+        const types = type.split('+');
+        types.forEach(waveType => {
+          const osc = audioContext.createOscillator();
+          osc.type = waveType.trim();
+          osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
+          osc.connect(gain);
+          osc.start();
+          osc.stop(audioContext.currentTime + 1);
+        });
+      } else {
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+        oscillator.connect(gain);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 1);
+      }
+      gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.9);
+      gain.connect(analyser);
+      gain.connect(dest);
+      analyser.connect(audioContext.destination);
+      visualize();
+    }
+    
+    function generateHarmony(frequency) {
+      const harmonyType = document.getElementById('harmonyType').value;
+      let harmonyOffsets = [];
+      switch (harmonyType) {
+        case 'none': harmonyOffsets = [0]; break;
+        case 'minorSecond': harmonyOffsets = [0, 1]; break;
+        case 'majorSecond': harmonyOffsets = [0, 2]; break;
+        case 'minorThird': harmonyOffsets = [0, 3]; break;
+        case 'majorThird': harmonyOffsets = [0, 4]; break;
+        case 'perfectFourth': harmonyOffsets = [0, 5]; break;
+        case 'augFourth': harmonyOffsets = [0, 6]; break;
+        case 'perfectFifth': harmonyOffsets = [0, 7]; break;
+        case 'minorSixth': harmonyOffsets = [0, 8]; break;
+        case 'majorSixth': harmonyOffsets = [0, 9]; break;
+        case 'minorSeventh': harmonyOffsets = [0, 10]; break;
+        case 'majorSeventh': harmonyOffsets = [0, 11]; break;
+        case 'octave': harmonyOffsets = [0, 12]; break;
+        case 'random': harmonyOffsets = [0, Math.floor(Math.random() * 12) + 1]; break;
+      }
+      harmonyOffsets.forEach(offset => {
+        const harmonyFrequency = frequency * Math.pow(2, offset / 12);
+        playSound(harmonyFrequency, document.getElementById('waveType').value);
+      });
+    }
+    
+    // Ändrad visualize() för att fylla området under vågformslinjen med blå (#3498db)
+    function visualize() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      function draw() {
+        analyser.getByteTimeDomainData(dataArray);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        const sliceWidth = canvas.width / bufferLength;
+        let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = v * canvas.height / 2;
+          if (i === 0) { ctx.moveTo(x, y); }
+          else { ctx.lineTo(x, y); }
+          x += sliceWidth;
+        }
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(0, canvas.height);
+        ctx.closePath();
+        ctx.fillStyle = '#3498db';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#eee';
+        ctx.stroke();
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+    
+    function updateMelodyColumnHighlight(step) {
+      const cells = document.querySelectorAll("#melody-sequencer .step");
+      cells.forEach(cell => {
+        if (parseInt(cell.dataset.index) === step) { cell.classList.add("playing"); }
+        else { cell.classList.remove("playing"); }
+      });
+    }
+    function updateBassColumnHighlight(step) {
+      const cells = document.querySelectorAll("#bass-sequencer .step");
+      cells.forEach(cell => {
+        if (parseInt(cell.dataset.index) === step) { cell.classList.add("playing"); }
+        else { cell.classList.remove("playing"); }
+      });
+    }
+    function updateDrumColumnHighlight(step) {
+      const selectors = ["#crashRow", "#extraCrashRow", "#rideLongRow", "#rideRow", "#hiHatRow", "#hiHatAltRow", "#pukaSmallRow", "#pukaMediumRow", "#pukaLargeRow", "#snareRow", "#extraSnareRow", "#drumBassRow", "#extraKickRow"];
+      selectors.forEach(selector => {
+        const cells = document.querySelectorAll(`${selector} .step`);
+        cells.forEach(cell => {
+          if (parseInt(cell.dataset.index) === step) { cell.classList.add("playing"); }
+          else { cell.classList.remove("playing"); }
+        });
+      });
+    }
+    
+    /***************************************
+     * BAS-sequencer
+     ***************************************/
+    function toggleBassPlay() {
+      if (isBassPlaying) {
+        clearInterval(bassIntervalId);
+        document.getElementById('bass-play-button').innerText = "Spela";
+      } else {
+        currentBassStep = 0;
+        startBassSequence();
+        document.getElementById('bass-play-button').innerText = "Stoppa";
+      }
+      isBassPlaying = !isBassPlaying;
+    }
+    function startBassSequence() {
+      const intervalTime = 60000 / bassTempo / 4;
+      bassIntervalId = setInterval(playBassSequence, intervalTime);
+    }
+    function playBassSequence() {
+      updateBassColumnHighlight(currentBassStep);
+      let played = false;
+      const bassRows = document.querySelectorAll("#bass-sequencer .track");
+      bassRows.forEach(row => {
+        const cells = row.querySelectorAll('.step');
+        cells.forEach(cell => {
+          if (cell.classList.contains('active') && !played && parseInt(cell.dataset.index) === currentBassStep) {
+            playBassTone(cell.dataset.note);
+            played = true;
+          }
+        });
+      });
+      currentBassStep = (currentBassStep + 1) % 32;
+    }
+    function playBassTone(note) {
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(bassVolume, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + bassToneLength);
+      if (bassWaveform === 'white-noise') {
+        const bufferSize = audioContext.sampleRate * bassToneLength;
+        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+        const noise = audioContext.createBufferSource();
+        noise.buffer = buffer;
+        noise.connect(gainNode).connect(audioContext.destination);
+        noise.start();
+        noise.stop(audioContext.currentTime + bassToneLength);
+      } else if (bassWaveform !== 'none') {
+        const osc = audioContext.createOscillator();
+        osc.type = bassWaveform;
+        osc.frequency.setValueAtTime(getBassFrequency(note), audioContext.currentTime);
+        osc.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        gainNode.connect(dest);
+        osc.start();
+        osc.stop(audioContext.currentTime + bassToneLength);
+      }
+    }
+    function createBassRow(note) {
+      const bassIndex = bassNotes.indexOf(note);
+      const safeNote = note.replace(/[^a-zA-Z0-9]/g, "");
+      const rowContainer = document.createElement('div');
+      rowContainer.classList.add('track');
+      const label = document.createElement('div');
+      label.classList.add('track-label');
+      label.textContent = note;
+      rowContainer.appendChild(label);
+      const row = document.createElement('div');
+      row.id = `bass-${safeNote}Row`;
+      row.classList.add('sequencer');
+      for (let i = 0; i < 32; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('step');
+        cell.dataset.note = note;
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => {
+          cell.classList.toggle('active');
+          playBassTone(note);
+          formParts.bass[currentPart.bass - 1][bassIndex][i] = cell.classList.contains('active') ? 1 : 0;
+        });
+        row.appendChild(cell);
+      }
+      rowContainer.appendChild(row);
+      document.getElementById('bass-sequencer').appendChild(rowContainer);
+    }
+    bassNotes.forEach(note => createBassRow(note));
+    
+    /***************************************
+     * TRUMMOR-sequencer
+     ***************************************/
+    function toggleDrumPlay() {
+      if (isDrumPlaying) {
+        clearInterval(drumIntervalId);
+        document.getElementById('drum-play-button').innerText = "Spela";
+      } else {
+        currentDrumStep = 0;
+        startDrumSequence();
+        document.getElementById('drum-play-button').innerText = "Stoppa";
+      }
+      isDrumPlaying = !isDrumPlaying;
+    }
+    function startDrumSequence() {
+      drumIntervalId = setInterval(playDrumSequence, 60000 / drumTempo / 4);
+    }
+    function playDrumSequence() {
+      updateDrumColumnHighlight(currentDrumStep);
+      const crashCells = document.querySelectorAll('#crashRow .step');
+      const extraCrashCells = document.querySelectorAll('#extraCrashRow .step');
+      const rideLongCells = document.querySelectorAll('#rideLongRow .step');
+      const rideCells = document.querySelectorAll('#rideRow .step');
+      const hiHatCells = document.querySelectorAll('#hiHatRow .step');
+      const hiHatAltCells = document.querySelectorAll('#hiHatAltRow .step');
+      const pukaSmallCells = document.querySelectorAll('#pukaSmallRow .step');
+      const pukaMediumCells = document.querySelectorAll('#pukaMediumRow .step');
+      const pukaLargeCells = document.querySelectorAll('#pukaLargeRow .step');
+      const snareCells = document.querySelectorAll('#snareRow .step');
+      const extraSnareCells = document.querySelectorAll('#extraSnareRow .step');
+      const bassCells = document.querySelectorAll('#drumBassRow .step');
+      const extraKickCells = document.querySelectorAll('#extraKickRow .step');
+      if (crashCells[currentDrumStep].classList.contains('active')) playCrash();
+      if (extraCrashCells[currentDrumStep].classList.contains('active')) playExtraCrash();
+      if (rideLongCells[currentDrumStep].classList.contains('active')) playRideLong();
+      if (rideCells[currentDrumStep].classList.contains('active')) playRide();
+      if (hiHatCells[currentDrumStep].classList.contains('active')) playHiHat();
+      if (hiHatAltCells[currentDrumStep].classList.contains('active')) playHiHatAlt();
+      if (pukaSmallCells[currentDrumStep].classList.contains('active')) playPukaSmall();
+      if (pukaMediumCells[currentDrumStep].classList.contains('active')) playPukaMedium();
+      if (pukaLargeCells[currentDrumStep].classList.contains('active')) playPukaLarge();
+      if (extraSnareCells[currentDrumStep].classList.contains('active')) playExtraSnare();
+      if (snareCells[currentDrumStep].classList.contains('active')) playSnare();
+      if (extraKickCells[currentDrumStep].classList.contains('active')) playExtraKick();
+      if (bassCells[currentDrumStep].classList.contains('active')) playKick();
+      currentDrumStep = (currentDrumStep + 1) % 32;
+    }
+    function playCrash() {
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.2, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2.5);
+      const noise = createWhiteNoise();
+      const noiseFilter = audioContext.createBiquadFilter();
+      noiseFilter.type = "highpass";
+      noiseFilter.frequency.value = 1500;
+      noise.connect(noiseFilter).connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.start();
+      noise.stop(audioContext.currentTime + 2.5);
+    }
+    function playExtraCrash() {
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.2, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2.5);
+      const noise = createWhiteNoise();
+      noise.playbackRate.value = 0.8;
+      const noiseFilter = audioContext.createBiquadFilter();
+      noiseFilter.type = "highpass";
+      noiseFilter.frequency.value = 1200;
+      noise.connect(noiseFilter).connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.start();
+      noise.stop(audioContext.currentTime + 2.5);
+    }
+    function playRide() {
+      const osc = audioContext.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(2000, audioContext.currentTime);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.2, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      const noise = createWhiteNoise();
+      const noiseFilter = audioContext.createBiquadFilter();
+      noiseFilter.type = "highpass";
+      noiseFilter.frequency.value = 1500;
+      const noiseGain = audioContext.createGain();
+      noiseGain.gain.setValueAtTime(drumVolume * 0.15, audioContext.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(audioContext.destination);
+      noiseGain.connect(dest);
+      osc.start();
+      noise.start();
+      osc.stop(audioContext.currentTime + 0.5);
+      noise.stop(audioContext.currentTime + 0.5);
+    }
+    function playRideLong() {
+      const osc = audioContext.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1000, audioContext.currentTime);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.1, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      const noise = createWhiteNoise();
+      const noiseFilter = audioContext.createBiquadFilter();
+      noiseFilter.type = "highpass";
+      noiseFilter.frequency.value = 1500;
+      const noiseGain = audioContext.createGain();
+      noiseGain.gain.setValueAtTime(drumVolume * 0.15, audioContext.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(audioContext.destination);
+      noiseGain.connect(dest);
+      osc.start();
+      noise.start();
+      osc.stop(audioContext.currentTime + 0.5);
+      noise.stop(audioContext.currentTime + 0.5);
+    }
+    function playKick() {
+      const osc = audioContext.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(60, audioContext.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.5);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 2.2, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.5);
+    }
+    function playExtraKick() {
+      const osc = audioContext.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(80, audioContext.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.5);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 2.2, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.5);
+    }
+    function playSnare() {
+      const noise = createWhiteNoise();
+      const noiseFilter = audioContext.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.value = 1000;
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      noise.connect(noiseFilter).connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.start();
+      noise.stop(audioContext.currentTime + 0.2);
+    }
+    function playExtraSnare() {
+      const noise = createWhiteNoise();
+      const noiseFilter = audioContext.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.value = 1500;
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      noise.connect(noiseFilter).connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.start();
+      noise.stop(audioContext.currentTime + 0.2);
+    }
+    function playHiHat() {
+      const noise = createWhiteNoise();
+      const osc = audioContext.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(5000, audioContext.currentTime);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.2, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      noise.connect(gain);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.start();
+      osc.start();
+      noise.stop(audioContext.currentTime + 0.1);
+      osc.stop(audioContext.currentTime + 0.1);
+    }
+    function playHiHatAlt() {
+      const noise = createWhiteNoise();
+      const noiseFilter = audioContext.createBiquadFilter();
+      noiseFilter.type = "highpass";
+      noiseFilter.frequency.value = 2000;
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.5, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+      noise.connect(noiseFilter).connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      noise.start();
+      noise.stop(audioContext.currentTime + 0.05);
+    }
+    function playPukaSmall() {
+      const osc = audioContext.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(350, audioContext.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(116, audioContext.currentTime + 0.2);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.5, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.2);
+    }
+    function playPukaMedium() {
+      const osc = audioContext.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(250, audioContext.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(83, audioContext.currentTime + 0.2);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.5, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.2);
+    }
+    function playPukaLarge() {
+      const osc = audioContext.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(150, audioContext.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.2);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(drumVolume * 0.5, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.connect(dest);
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.2);
+    }
+    function createWhiteNoise() {
+      const bufferSize = audioContext.sampleRate;
+      const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+      const output = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+      const noise = audioContext.createBufferSource();
+      noise.buffer = buffer;
+      return noise;
+    }
+    function createDrumRow(id, instrument) {
+      const row = document.getElementById(id);
+      for (let i = 0; i < 32; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('step');
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => {
+          cell.classList.toggle('active');
+          formParts.drums[instrument][currentPart.drums - 1][i] = cell.classList.contains('active') ? 1 : 0;
+          playDrumSoundOnClick(instrument);
+        });
+        row.appendChild(cell);
+      }
+    }
+    createDrumRow('crashRow', 'crash');
+    createDrumRow('extraCrashRow', 'extraCrash');
+    createDrumRow('rideLongRow', 'rideLong');
+    createDrumRow('rideRow', 'ride');
+    createDrumRow('hiHatRow', 'hiHat');
+    createDrumRow('hiHatAltRow', 'hiHatAlt');
+    createDrumRow('pukaSmallRow', 'pukaSmall');
+    createDrumRow('pukaMediumRow', 'pukaMedium');
+    createDrumRow('pukaLargeRow', 'pukaLarge');
+    createDrumRow('snareRow', 'snare');
+    createDrumRow('extraSnareRow', 'extraSnare');
+    createDrumRow('drumBassRow', 'drumBass');
+    createDrumRow('extraKickRow', 'extraKick');
+    function playDrumSoundOnClick(instrument) {
+      switch (instrument) {
+        case 'crash':        playCrash(); break;
+        case 'extraCrash':   playExtraCrash(); break;
+        case 'rideLong':     playRideLong(); break;
+        case 'ride':         playRide(); break;
+        case 'hiHat':        playHiHat(); break;
+        case 'hiHatAlt':     playHiHatAlt(); break;
+        case 'pukaSmall':    playPukaSmall(); break;
+        case 'pukaMedium':   playPukaMedium(); break;
+        case 'pukaLarge':    playPukaLarge(); break;
+        case 'snare':        playSnare(); break;
+        case 'extraSnare':   playExtraSnare(); break;
+        case 'drumBass':     playKick(); break;
+        case 'extraKick':    playExtraKick(); break;
+      }
+    }
+    function randomizeDrumPattern() {
+      const rows = ['crashRow','extraCrashRow','rideLongRow','rideRow','hiHatRow','hiHatAltRow','pukaSmallRow','pukaMediumRow','pukaLargeRow','snareRow','extraSnareRow','drumBassRow','extraKickRow'];
+      rows.forEach(rowId => {
+        const cells = document.querySelectorAll(`#${rowId} .step`);
+        cells.forEach(cell => cell.classList.toggle('active', Math.random() > 0.7));
+      });
+    }
+    function clearDrumPattern() {
+      const drumInstruments = ['crash','extraCrash','rideLong','ride','hiHat','hiHatAlt','pukaSmall','pukaMedium','pukaLarge','snare','extraSnare','drumBass','extraKick'];
+      const currentDrumPartIndex = currentPart.drums - 1;
+      drumInstruments.forEach(instrument => {
+        const cells = document.querySelectorAll(`#${instrument}Row .step`);
+        formParts.drums[instrument][currentDrumPartIndex] = Array(32).fill(0);
+        cells.forEach((cell, index) => { if (index < 32) cell.classList.remove('active'); });
+      });
+      console.log(`Formdel ${currentPart.drums} i trumsequencern rensad.`);
+    }
+    
+    /***************************************
+     * Hjälpfunktioner för Melodi-sequencer
+     ***************************************/
+    function createMelodyRow(note) {
+      const noteIndex = melodyNotes.indexOf(note);
+      const safeNote = note.replace(/[^a-zA-Z0-9]/g, "");
+      const rowContainer = document.createElement('div');
+      rowContainer.classList.add('track');
+      const label = document.createElement('div');
+      label.classList.add('track-label');
+      label.textContent = note;
+      rowContainer.appendChild(label);
+      const row = document.createElement('div');
+      row.id = `melody-${safeNote}Row`;
+      row.classList.add('sequencer');
+      for (let i = 0; i < 32; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('step');
+        cell.dataset.note = note;
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => {
+          cell.classList.toggle('active');
+          formParts.melody[currentPart.melody - 1][noteIndex][i] = cell.classList.contains('active') ? 1 : 0;
+          playToneOnClick(note, melodyWaveform, melodyVolume, melodyToneLength);
+        });
+        row.appendChild(cell);
+      }
+      rowContainer.appendChild(row);
+      document.getElementById('melody-sequencer').appendChild(rowContainer);
+    }
+    melodyNotes.forEach(note => createMelodyRow(note));
+    
+    function playToneOnClick(note, waveform, volume, toneLength) {
+      if (waveform === "none") return;
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + toneLength);
+      const osc = audioContext.createOscillator();
+      osc.type = waveform;
+      osc.frequency.setValueAtTime(getMelodyFrequency(note), audioContext.currentTime);
+      osc.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      osc.start();
+      osc.stop(audioContext.currentTime + toneLength);
+    }
+    function toggleMelodyPlay() {
+      if (isMelodyPlaying) {
+        clearInterval(melodyIntervalId);
+        document.getElementById('melody-play-button').innerText = "Spela";
+      } else {
+        currentMelodyStep = 0;
+        startMelodySequence();
+        document.getElementById('melody-play-button').innerText = "Stoppa";
+      }
+      isMelodyPlaying = !isMelodyPlaying;
+    }
+    function startMelodySequence() {
+      const intervalTime = 60000 / melodyTempo / 4;
+      melodyIntervalId = setInterval(playMelodySequence, intervalTime);
+    }
+    function playMelodySequence() {
+      updateMelodyColumnHighlight(currentMelodyStep);
+      for (let n = 0; n < melodyNotes.length; n++) {
+        const safeNote = melodyNotes[n].replace(/[^a-zA-Z0-9]/g, "");
+        const rowCells = document.querySelectorAll(`#melody-${safeNote}Row .step`);
+        rowCells.forEach(cell => {
+          if (cell.classList.contains('active') && parseInt(cell.dataset.index) === currentMelodyStep) {
+            playMelodyTone(cell.dataset.note);
+          }
+        });
+      }
+      currentMelodyStep = (currentMelodyStep + 1) % 32;
+    }
+    function playMelodyTone(note) {
+      if (melodyWaveform === "none") return;
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(melodyVolume, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + melodyToneLength);
+      const osc = audioContext.createOscillator();
+      osc.type = melodyWaveform;
+      osc.frequency.setValueAtTime(getMelodyFrequency(note), audioContext.currentTime);
+      osc.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      gainNode.connect(dest);
+      osc.start();
+      osc.stop(audioContext.currentTime + melodyToneLength);
+    }
+    
+    /***************************************
+     * Event-lyssnare för kontroll-inputs
+     ***************************************/
+    document.getElementById('bass-tempo').addEventListener('input', function() {
+      bassTempo = this.value;
+      if (isBassPlaying) { clearInterval(bassIntervalId); startBassSequence(); }
+    });
+    document.getElementById('bass-volume').addEventListener('input', function() {
+      bassVolume = parseFloat(this.value);
+    });
+    document.getElementById('waveform').addEventListener('change', function() {
+      bassWaveform = this.value;
+    });
+    document.getElementById('bass-tone-length').addEventListener('input', function() {
+      bassToneLength = parseFloat(this.value);
+    });
+    document.getElementById('drum-tempo').addEventListener('input', function() {
+      drumTempo = this.value;
+      if (isDrumPlaying) { clearInterval(drumIntervalId); startDrumSequence(); }
+    });
+    document.getElementById('drum-volume').addEventListener('input', function() {
+      drumVolume = parseFloat(this.value);
+    });
+    document.getElementById('melody-tempo').addEventListener('input', function() {
+      melodyTempo = this.value;
+      if (isMelodyPlaying) { clearInterval(melodyIntervalId); startMelodySequence(); }
+    });
+    document.getElementById('melody-volume').addEventListener('input', function() {
+      melodyVolume = parseFloat(this.value);
+    });
+    document.getElementById('melody-waveform').addEventListener('change', function() {
+      melodyWaveform = this.value;
+    });
+    document.getElementById('melody-tone-length').addEventListener('input', function() {
+      melodyToneLength = parseFloat(this.value);
+    });
+    function togglePlayAll() {
+      if (isBassPlaying || isDrumPlaying || isMelodyPlaying) {
+        if (isBassPlaying) toggleBassPlay();
+        if (isDrumPlaying) toggleDrumPlay();
+        if (isMelodyPlaying) toggleMelodyPlay();
+        document.getElementById('play-all-button').innerText = "Spela alla";
+      } else {
+        toggleBassPlay();
+        toggleDrumPlay();
+        toggleMelodyPlay();
+        document.getElementById('play-all-button').innerText = "Stoppa alla";
+      }
+    }
+  
+    /***************************************
+     * Mikrofon (eko-/brusreducerad)
+     ***************************************/
+    let micStream = null;
+    let micSourceNode = null;
+    async function startMicCapture() {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false }
+        });
+        micSourceNode = audioContext.createMediaStreamSource(micStream);
+        micSourceNode.connect(dest);
+        console.log("Mikrofon startad (med echoCancellation, noiseSuppression).");
+      } catch (err) { console.error("Kunde inte få tillgång till mikrofonen:", err); }
+    }
+    function stopMicCapture() {
+      if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
+      if (micSourceNode) { micSourceNode.disconnect(); micSourceNode = null; }
+      console.log("Mikrofon avstängd.");
+    }
+  </script>
+</body>
+</html>
