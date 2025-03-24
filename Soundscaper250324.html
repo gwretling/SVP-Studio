@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Soundscaper</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+  margin-top: 0;
+    }
+    /* Gridlayout: 4 kolumner */
+    .settings-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    /* Varje inställningsruta */
+    .section {
+      border: 1px solid #ccc;
+      padding: 10px;
+      box-sizing: border-box;
+      min-height: 300px;
+      text-align: left;
+    }
+    .section h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    /* Varje rad i en ruta: etikett direkt till vänster om fältet */
+    .row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .row label {
+      width: 150px;
+      text-align: left;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .row input,
+    .row select,
+    .row span {
+      flex: 1;
+      text-align: left;
+      margin: 0;
+    }
+    /* Wrapper för checkboxar – placerar checkboxen precis efter etiketten */
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+    }
+    /* Kontrollraden med knappar */
+    .controls-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button, select, input {
+      font-size: 1em;
+      padding: 10px;
+      margin: 5px;
+    }
+    button:disabled {
+      opacity: 0.5;
+    }
+    /* Gör autovolume-knappen mindre och vänsterjusterad */
+    .small-button {
+      font-size: 0.8em;
+      padding: 5px 8px;
+      margin: 0;
+    }
+    .autovolume-row {
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 20px;
+    }
+    /* Klaviatur – utökad med extra utrymme (1200px bredd) */
+    #keyboard {
+      position: relative;
+      margin: 20px auto;
+      width: 1200px;
+      height: 200px;
+      border: 1px solid #333;
+      user-select: none;
+    }
+    .white-key {
+      position: absolute;
+      bottom: 0;
+      width: calc(100% / 28);
+      height: 100%;
+      border: 1px solid #000;
+      background: #fff;
+      box-sizing: border-box;
+      cursor: pointer;
+      z-index: 1;
+    }
+    .white-key.selected {
+      background: #add8e6;
+      border-color: #add8e6;
+    }
+    .black-key {
+      position: absolute;
+      top: 0;
+      width: calc(100% / 42);
+      height: 60%;
+      background: #000;
+      cursor: pointer;
+      z-index: 2;
+      color: #fff;
+      font-size: 0.8em;
+      text-align: center;
+      line-height: 1.2em;
+    }
+    .black-key.selected {
+      background: #add8e6;
+      border-color: #add8e6;
+    }
+    /* Klass för de toner som spelas (visas med ljusblå bakgrund) */
+    .playing-tone {
+      background: #add8e6 !important;
+    }
+    /* Exempel på intryckt nummerfält för Fixed och Random Poly Density */
+    #fixedPolyDensityValue,
+    #randomPolyDensityValue {
+      margin-left: 20px;
+    }
+.row input[type="number"]#toneDurationRandomMin {
+  margin-left: 20px;
+}
+.row input[type="number"]#silenceDurationRandomMin {
+  margin-left: 20px;
+}
+  </style>
+</head>
+<body>
+  <h1>Soundscaper</h1>
+  
+  <!-- Inställningsrutorna -->
+  <div class="settings-container">
+    <!-- Grundinställningar -->
+    <div class="section">
+      <h3>Grundinställningar</h3>
+      <div class="row">
+        <label for="oscillatorType">Oscillator‑typ:</label>
+        <select id="oscillatorType">
+          <option value="sine">Sine</option>
+          <option value="square">Square</option>
+          <option value="triangle">Triangle</option>
+          <option value="sawtooth">Sawtooth</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="creativePreset">Creative Preset:</label>
+        <select id="creativePreset">
+          <option value="custom">Custom</option>
+          <option value="ambientPad">Ambient Pad</option>
+          <option value="funkyBass">Funky Bass</option>
+          <option value="spaceySynth">Spacey Synth</option>
+          <option value="deepGroove">Deep Groove</option>
+          <option value="lunarEcho">Lunar Echo</option>
+          <option value="mysticVibe">Mystic Vibe</option>
+          <option value="electricPulse">Electric Pulse</option>
+          <option value="cosmicSwirl">Cosmic Swirl</option>
+          <option value="dreamyWave">Dreamy Wave</option>
+          <option value="galacticDrift">Galactic Drift</option>
+          <option value="neonFuture">Neon Future</option>
+          <option value="retroCharm">Retro Charm</option>
+          <option value="etherealChime">Ethereal Chime</option>
+          <option value="crystalClear">Crystal Clear</option>
+          <option value="subterranean">Subterranean</option>
+          <option value="solarFlare">Solar Flare</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="toneDuration">Note Length (sec):</label>
+        <input type="number" id="toneDuration" value="10" min="0.1" step="0.1">
+      </div>
+      <div class="row">
+        <label for="silenceDuration">Pause (sec):</label>
+        <input type="number" id="silenceDuration" value="10" min="0.1" step="0.1">
+      </div>
+      <!-- Random Note Length med checkbox framför nummerintervallet -->
+      <div class="row">
+        <label for="enableRandomNoteLength">Random Note Length:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="enableRandomNoteLength">
+        </div>
+        <input type="number" id="toneDurationRandomMin" value="1" min="0.1" step="0.1" style="width:45%;">
+        <span style="width:10%; text-align:center;">-</span>
+        <input type="number" id="toneDurationRandomMax" value="20" min="0.1" step="0.1" style="width:45%;">
+      </div>
+      <!-- Random Pause med checkbox framför nummerintervallet -->
+      <div class="row">
+        <label for="enableRandomPauseLength">Random Pause:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="enableRandomPauseLength">
+        </div>
+        <input type="number" id="silenceDurationRandomMin" value="1" min="0.1" step="0.1" style="width:45%;">
+        <span style="width:10%; text-align:center;">-</span>
+        <input type="number" id="silenceDurationRandomMax" value="20" min="0.1" step="0.1" style="width:45%;">
+      </div>
+      <div class="row">
+        <label for="soundMode">Mono/Poly:</label>
+        <select id="soundMode">
+          <option value="mono">Monofonic</option>
+          <option value="poly">Polyfonic</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="polyDensity">Poly Density (standard):</label>
+        <input type="number" id="polyDensity" value="3" min="1" max="10" step="1">
+      </div>
+      <!-- Alternativ: Fixed Poly Density -->
+      <div class="row">
+        <label for="fixedPolyDensity">Fixed Poly Density:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="fixedPolyDensity">
+        </div>
+        <input type="number" id="fixedPolyDensityValue" min="2" max="8" value="5">
+      </div>
+      <!-- Alternativ: Random Poly Density -->
+      <div class="row">
+        <label for="randomPolyDensity">Random Poly Density:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="randomPolyDensity">
+        </div>
+        <input type="number" id="randomPolyDensityValue" min="2" max="8" value="4">
+      </div>
+      <div class="row">
+        <label for="toneSpread">Tone Spread (ms):</label>
+        <input type="range" id="toneSpread" min="0" max="1000" step="50" value="500">
+        <span id="toneSpreadValue">500</span>
+      </div>
+    </div>
+    
+    <!-- Reverb & Effekter -->
+    <div class="section">
+      <h3>Reverb & Effekter</h3>
+      <div class="row">
+        <label for="reverbMix">Reverb Mix:</label>
+        <input type="range" id="reverbMix" min="0" max="2" step="0.01" value="0.2">
+        <span id="reverbMixValue">0.20</span>
+      </div>
+      <div class="row">
+        <label for="reverbDecay">Reverb Decay (sek):</label>
+        <input type="range" id="reverbDecay" min="0.5" max="5" step="0.1" value="2">
+        <span id="reverbDecayValue">2.0</span>
+      </div>
+      <div class="row">
+        <label for="chorusMix">Chorus Mix:</label>
+        <input type="range" id="chorusMix" min="0" max="1" step="0.01" value="0">
+        <span id="chorusMixValue">0.00</span>
+      </div>
+      <div class="row">
+        <label for="flangerMix">Flanger Mix:</label>
+        <input type="range" id="flangerMix" min="0" max="1" step="0.01" value="0">
+        <span id="flangerMixValue">0.00</span>
+      </div>
+      <div class="row">
+        <label for="masterVolume">Master Volume:</label>
+        <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.2">
+        <span id="masterVolumeValue">0.20</span>
+      </div>
+      <div class="autovolume-row">
+        <button id="autoVolumeBtn" class="small-button">Auto Volume: OFF</button>
+      </div>
+<br>
+      <div class="row">
+        <label for="enableRotor">Enable Rotor Effect:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="enableRotor">
+        </div>
+      </div>
+      <div class="row">
+        <label for="rotorMode">Rotor Mode:</label>
+        <select id="rotorMode">
+          <option value="custom">Custom Note</option>
+          <option value="auto">Auto Rhythm</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="rotorNote">Rotor Note:</label>
+        <select id="rotorNote">
+          <option value="whole">Whole</option>
+          <option value="half">Half</option>
+          <option value="quarter" selected>Quarter</option>
+          <option value="eighth">Eighth</option>
+          <option value="sixteenth">Sixteenth</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- Sound Settings (ADSR & Detune) -->
+    <div class="section">
+      <h3>Sound Settings</h3>
+      <div class="row">
+        <label for="detune">Detune (cent):</label>
+        <input type="range" id="detune" min="-100" max="100" step="1" value="0">
+        <span id="detuneValue">0</span>
+      </div>
+      <div class="row">
+        <label for="attackTime">Attack (sek):</label>
+        <input type="range" id="attackTime" min="0" max="2" step="0.05" value="0.1">
+        <span id="attackTimeValue">0.10</span>
+      </div>
+      <div class="row">
+        <label for="decayTime">Decay (sek):</label>
+        <input type="range" id="decayTime" min="0" max="2" step="0.05" value="0.5">
+        <span id="decayTimeValue">0.50</span>
+      </div>
+      <div class="row">
+        <label for="sustainLevel">Sustain (0–1):</label>
+        <input type="range" id="sustainLevel" min="0" max="1" step="0.01" value="0.7">
+        <span id="sustainLevelValue">0.70</span>
+      </div>
+      <div class="row">
+        <label for="releaseTime">Release (sek):</label>
+        <input type="range" id="releaseTime" min="0" max="2" step="0.05" value="0.5">
+        <span id="releaseTimeValue">0.50</span>
+      </div>
+    </div>
+    
+    <!-- Ambient Settings -->
+    <div class="section">
+      <h3>Ambient Settings</h3>
+      <div class="row">
+        <label for="enableFilterLFO">Enable Filter LFO:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="enableFilterLFO">
+        </div>
+      </div>
+      <div class="row">
+        <label for="filterLFORate">LFO Rate (Hz):</label>
+        <input type="range" id="filterLFORate" min="0.01" max="0.5" step="0.01" value="0.1">
+        <span id="filterLFORateValue">0.10</span>
+      </div>
+      <div class="row">
+        <label for="filterLFODepth">LFO Depth (Hz):</label>
+        <input type="range" id="filterLFODepth" min="50" max="1000" step="10" value="200">
+        <span id="filterLFODepthValue">200</span>
+      </div>
+      <div class="row">
+        <label for="enableAmbientNoise">Enable Ambient Noise:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="enableAmbientNoise">
+        </div>
+      </div>
+      <div class="row">
+        <label for="ambientNoiseVolume">Noise Volume:</label>
+        <input type="range" id="ambientNoiseVolume" min="0" max="1" step="0.01" value="0.2">
+        <span id="ambientNoiseVolumeValue">0.20</span>
+      </div>
+      <div class="row">
+        <label for="enableStereoPanning">Enable Stereo Panning:</label>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="enableStereoPanning">
+        </div>
+      </div>
+      <div class="row">
+        <label for="panningRange">Panning Range (±):</label>
+        <input type="range" id="panningRange" min="0" max="1" step="0.01" value="0.5">
+        <span id="panningRangeValue">0.50</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Kontrollraden med knappar -->
+  <div class="controls-container">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <button id="fixedRandomIntervall">Fixed Random Intervall</button>
+    <button id="resetRange">Reset Intervall</button>
+    <button id="randomIntervall">Random Intervall</button>
+    <button id="showNotesBtn">Show notes</button>
+    <button id="saveProject">Save Project</button>
+    <button id="loadProject">Load Project</button>
+    <input type="file" id="projectFileInput" style="display:none">
+  </div>
+  
+  <!-- Klaviatur -->
+  <div id="keyboard"></div>
+  <div style="margin-top: 10px; font-weight: bold;">goran.wretling@umu.se</div>
+  
+  <script>
+    // Funktion för att räkna ut enharmoniskt namn – returnerar t.ex. "Db" för "C#"
+    function getEnharmonic(note) {
+      const mapping = { "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb" };
+      if (note.includes("#")) {
+        const letter = note.slice(0,2);
+        const octave = note.slice(2);
+        return mapping[letter] + octave;
+      }
+      return "";
+    }
+    
+    // Globala variabler
+    let audioCtx = null;
+    let activeTones = [];
+    let convolverNode = null;
+    let masterGain = null;
+    let effectsInput = null;
+    let filterNode = null;
+    let autoVolume = false;
+    let intervalMode = "random";
+    let ambientNoiseSource = null;
+    let ambientNoiseGain = null;
+    let filterLFO = null;
+    let selectedLowerMidi = null;
+    let selectedUpperMidi = null;
+    let selectedElements = [];
+    let fixedPolyDensityCache = null;
+    let showNotes = false;
+    
+    // Referenser till UI-element
+    const startButton = document.getElementById('startBtn');
+    const stopButton = document.getElementById('stopBtn');
+    const oscillatorSelect = document.getElementById('oscillatorType');
+    const creativePresetSelect = document.getElementById('creativePreset');
+    const toneDurationInput = document.getElementById('toneDuration');
+    const silenceDurationInput = document.getElementById('silenceDuration');
+    const modeSelect = document.getElementById('soundMode');
+    const polyDensityInput = document.getElementById('polyDensity');
+    const toneSpreadInput = document.getElementById('toneSpread');
+    const toneSpreadValueDisplay = document.getElementById('toneSpreadValue');
+    const reverbMixInput = document.getElementById('reverbMix');
+    const reverbMixValueDisplay = document.getElementById('reverbMixValue');
+    const reverbDecayInput = document.getElementById('reverbDecay');
+    const reverbDecayValueDisplay = document.getElementById('reverbDecayValue');
+    const masterVolumeInput = document.getElementById('masterVolume');
+    const masterVolumeValueDisplay = document.getElementById('masterVolumeValue');
+    const autoVolumeBtn = document.getElementById('autoVolumeBtn');
+    const keyboardDiv = document.getElementById('keyboard');
+    
+    // Intervallhanteringsknappar
+    const fixedRandomIntervallBtn = document.getElementById("fixedRandomIntervall");
+    const randomIntervallBtn = document.getElementById("randomIntervall");
+    
+    // Show Notes-knapp
+    const showNotesBtn = document.getElementById("showNotesBtn");
+    showNotesBtn.addEventListener("click", () => {
+      showNotes = !showNotes;
+      showNotesBtn.innerText = showNotes ? "Hide notes" : "Show notes";
+      if (!showNotes) {
+        document.querySelectorAll('.playing-tone').forEach(el => el.classList.remove('playing-tone'));
+      }
+    });
+    
+    // Ambient Settings
+    const enableFilterLFOCheckbox = document.getElementById('enableFilterLFO');
+    const filterLFORateInput = document.getElementById('filterLFORate');
+    const filterLFORateValueDisplay = document.getElementById('filterLFORateValue');
+    const filterLFODepthInput = document.getElementById('filterLFODepth');
+    const filterLFODepthValueDisplay = document.getElementById('filterLFODepthValue');
+    const enableAmbientNoiseCheckbox = document.getElementById('enableAmbientNoise');
+    const ambientNoiseVolumeInput = document.getElementById('ambientNoiseVolume');
+    const ambientNoiseVolumeValueDisplay = document.getElementById('ambientNoiseVolumeValue');
+    const enableStereoPanningCheckbox = document.getElementById('enableStereoPanning');
+    const panningRangeInput = document.getElementById('panningRange');
+    const panningRangeValueDisplay = document.getElementById('panningRangeValue');
+    
+    // Rotor Settings
+    const enableRotorCheckbox = document.getElementById('enableRotor');
+    const rotorModeSelect = document.getElementById('rotorMode');
+    const rotorNoteSelect = document.getElementById('rotorNote');
+    
+    // Sound Settings
+    const detuneInput = document.getElementById('detune');
+    const detuneValueDisplay = document.getElementById('detuneValue');
+    const attackTimeInput = document.getElementById('attackTime');
+    const attackTimeValueDisplay = document.getElementById('attackTimeValue');
+    const decayTimeInput = document.getElementById('decayTime');
+    const decayTimeValueDisplay = document.getElementById('decayTimeValue');
+    const sustainLevelInput = document.getElementById('sustainLevel');
+    const sustainLevelValueDisplay = document.getElementById('sustainLevelValue');
+    const releaseTimeInput = document.getElementById('releaseTime');
+    const releaseTimeValueDisplay = document.getElementById('releaseTimeValue');
+    
+    // Uppdatera slider-värden för Sound Settings
+    detuneInput.addEventListener('input', () => { detuneValueDisplay.innerText = detuneInput.value; });
+    attackTimeInput.addEventListener('input', () => { attackTimeValueDisplay.innerText = parseFloat(attackTimeInput.value).toFixed(2); });
+    decayTimeInput.addEventListener('input', () => { decayTimeValueDisplay.innerText = parseFloat(decayTimeInput.value).toFixed(2); });
+    sustainLevelInput.addEventListener('input', () => { sustainLevelValueDisplay.innerText = parseFloat(sustainLevelInput.value).toFixed(2); });
+    releaseTimeInput.addEventListener('input', () => { releaseTimeValueDisplay.innerText = parseFloat(releaseTimeInput.value).toFixed(2); });
+    
+    // Uppdatera värdespann för chorus och flanger
+    const chorusMixInput = document.getElementById('chorusMix');
+    const chorusMixValueDisplay = document.getElementById('chorusMixValue');
+    const flangerMixInput = document.getElementById('flangerMix');
+    const flangerMixValueDisplay = document.getElementById('flangerMixValue');
+    chorusMixInput.addEventListener('input', () => { 
+      chorusMixValueDisplay.innerText = parseFloat(chorusMixInput.value).toFixed(2); 
+    });
+    flangerMixInput.addEventListener('input', () => { 
+      flangerMixValueDisplay.innerText = parseFloat(flangerMixInput.value).toFixed(2); 
+    });
+    
+    autoVolumeBtn.addEventListener('click', () => {
+      autoVolume = !autoVolume;
+      autoVolumeBtn.innerText = autoVolume ? "Auto Volume: ON" : "Auto Volume: OFF";
+    });
+    
+    creativePresetSelect.addEventListener('change', () => {
+      const preset = creativePresetSelect.value;
+      applyPreset(preset);
+    });
+    
+    function applyPreset(preset) {
+      switch (preset) {
+        case "ambientPad":
+          oscillatorSelect.value = "sine";
+          toneDurationInput.value = 15;
+          silenceDurationInput.value = 5;
+          polyDensityInput.value = 4;
+          reverbMixInput.value = 0.8;
+          reverbMixValueDisplay.innerText = "0.80";
+          reverbDecayInput.value = 4;
+          reverbDecayValueDisplay.innerText = "4.0";
+          detuneInput.value = 10;
+          detuneValueDisplay.innerText = "10";
+          attackTimeInput.value = 1;
+          attackTimeValueDisplay.innerText = "1.00";
+          decayTimeInput.value = 0.5;
+          decayTimeValueDisplay.innerText = "0.50";
+          sustainLevelInput.value = 0.7;
+          sustainLevelValueDisplay.innerText = "0.70";
+          releaseTimeInput.value = 2;
+          releaseTimeValueDisplay.innerText = "2.00";
+          break;
+        case "custom":
+        default:
+          break;
+      }
+    }
+    
+    // Funktion för att applicera chorus och flanger
+    function applyChorusAndFlanger(inputNode) {
+      const chorusMix = parseFloat(chorusMixInput.value);
+      const flangerMix = parseFloat(flangerMixInput.value);
+      
+      const chorusDelay = audioCtx.createDelay();
+      chorusDelay.delayTime.value = 0.03;
+      const chorusLFO = audioCtx.createOscillator();
+      const chorusLFOGain = audioCtx.createGain();
+      chorusLFO.frequency.value = 0.25;
+      chorusLFOGain.gain.value = 0.005;
+      chorusLFO.connect(chorusLFOGain);
+      chorusLFOGain.connect(chorusDelay.delayTime);
+      chorusLFO.start();
+      
+      const flangerDelay = audioCtx.createDelay();
+      flangerDelay.delayTime.value = 0.005;
+      const flangerLFO = audioCtx.createOscillator();
+      const flangerLFOGain = audioCtx.createGain();
+      flangerLFO.frequency.value = 0.5;
+      flangerLFOGain.gain.value = 0.002;
+      flangerLFO.connect(flangerLFOGain);
+      flangerLFOGain.connect(flangerDelay.delayTime);
+      flangerLFO.start();
+      
+      const chorusGain = audioCtx.createGain();
+      chorusGain.gain.value = chorusMix;
+      const flangerGain = audioCtx.createGain();
+      flangerGain.gain.value = flangerMix;
+      const dryGainForEffects = audioCtx.createGain();
+      dryGainForEffects.gain.value = 1 - (chorusMix + flangerMix);
+      
+      inputNode.connect(dryGainForEffects);
+      inputNode.connect(chorusDelay);
+      inputNode.connect(flangerDelay);
+      
+      chorusDelay.connect(chorusGain);
+      flangerDelay.connect(flangerGain);
+      
+      const merged = audioCtx.createGain();
+      dryGainForEffects.connect(merged);
+      chorusGain.connect(merged);
+      flangerGain.connect(merged);
+      
+      return {
+        node: merged,
+        cleanup: function() {
+          chorusLFO.stop();
+          chorusLFO.disconnect();
+          chorusLFOGain.disconnect();
+          chorusDelay.disconnect();
+          chorusGain.disconnect();
+          flangerLFO.stop();
+          flangerLFO.disconnect();
+          flangerLFOGain.disconnect();
+          flangerDelay.disconnect();
+          flangerGain.disconnect();
+        }
+      };
+    }
+    
+    function setRandomInterval() {
+      const minMidi = 48;
+      const maxMidi = 95;
+      const lower = Math.floor(Math.random() * (maxMidi - minMidi));
+      const lowerMidi = minMidi + lower;
+      const upperMidi = lowerMidi + 1 + Math.floor(Math.random() * (maxMidi - lowerMidi));
+      selectedLowerMidi = lowerMidi;
+      selectedUpperMidi = upperMidi;
+      document.querySelectorAll(".white-key, .black-key").forEach(el => el.classList.remove("selected"));
+      document.querySelectorAll(".white-key, .black-key").forEach(el => {
+        const midiVal = parseInt(el.dataset.midi);
+        if (midiVal >= selectedLowerMidi && midiVal <= selectedUpperMidi) {
+          el.classList.add("selected");
+        }
+      });
+    }
+    
+    fixedRandomIntervallBtn.addEventListener("click", () => {
+      intervalMode = "fixed";
+      setRandomInterval();
+    });
+    
+    randomIntervallBtn.addEventListener("click", () => {
+      intervalMode = "random";
+      setRandomInterval();
+    });
+    
+    document.getElementById("resetRange").addEventListener("click", () => {
+      selectedLowerMidi = null;
+      selectedUpperMidi = null;
+      intervalMode = "none";
+      document.querySelectorAll(".white-key, .black-key").forEach(el => el.classList.remove("selected"));
+    });
+    
+    const whiteKeysData = [
+      { midi: 48, note: "C3" },
+      { midi: 50, note: "D3" },
+      { midi: 52, note: "E3" },
+      { midi: 53, note: "F3" },
+      { midi: 55, note: "G3" },
+      { midi: 57, note: "A3" },
+      { midi: 59, note: "B3" },
+      { midi: 60, note: "C4" },
+      { midi: 62, note: "D4" },
+      { midi: 64, note: "E4" },
+      { midi: 65, note: "F4" },
+      { midi: 67, note: "G4" },
+      { midi: 69, note: "A4" },
+      { midi: 71, note: "B4" },
+      { midi: 72, note: "C5" },
+      { midi: 74, note: "D5" },
+      { midi: 76, note: "E5" },
+      { midi: 77, note: "F5" },
+      { midi: 79, note: "G5" },
+      { midi: 81, note: "A5" },
+      { midi: 83, note: "B5" },
+      { midi: 84, note: "C6" },
+      { midi: 86, note: "D6" },
+      { midi: 88, note: "E6" },
+      { midi: 89, note: "F6" },
+      { midi: 91, note: "G6" },
+      { midi: 93, note: "A6" },
+      { midi: 95, note: "B6" }
+    ];
+    
+    const blackKeysData = [
+      { between: 0, midi: 49, note: "C#3" },
+      { between: 1, midi: 51, note: "D#3" },
+      { between: 3, midi: 54, note: "F#3" },
+      { between: 4, midi: 56, note: "G#3" },
+      { between: 5, midi: 58, note: "A#3" },
+      { between: 7, midi: 61, note: "C#4" },
+      { between: 8, midi: 63, note: "D#4" },
+      { between: 10, midi: 66, note: "F#4" },
+      { between: 11, midi: 68, note: "G#4" },
+      { between: 12, midi: 70, note: "A#4" },
+      { between: 14, midi: 73, note: "C#5" },
+      { between: 15, midi: 75, note: "D#5" },
+      { between: 17, midi: 78, note: "F#5" },
+      { between: 18, midi: 80, note: "G#5" },
+      { between: 19, midi: 82, note: "A#5" },
+      { between: 21, midi: 85, note: "C#6" },
+      { between: 22, midi: 87, note: "D#6" },
+      { between: 24, midi: 90, note: "F#6" },
+      { between: 25, midi: 92, note: "G#6" },
+      { between: 26, midi: 94, note: "A#6" }
+    ];
+    
+    function createKeyboard() {
+      keyboardDiv.innerHTML = "";
+      const keyboardWidth = keyboardDiv.clientWidth;
+      const whiteKeyWidth = keyboardWidth / whiteKeysData.length;
+      
+      whiteKeysData.forEach((keyData, index) => {
+        const key = document.createElement("div");
+        key.classList.add("white-key");
+        key.dataset.midi = keyData.midi;
+        key.style.left = (index * whiteKeyWidth) + "px";
+        key.style.width = whiteKeyWidth + "px";
+        key.innerHTML = `<span style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:0.8em;">${keyData.note}</span>`;
+        key.addEventListener("click", () => selectRange(parseInt(key.dataset.midi), key));
+        keyboardDiv.appendChild(key);
+      });
+      
+      blackKeysData.forEach((keyData) => {
+        const key = document.createElement("div");
+        key.classList.add("black-key");
+        key.dataset.midi = keyData.midi;
+        const leftPos = (keyData.between + 1) * whiteKeyWidth - (whiteKeyWidth * 0.3);
+        key.style.left = leftPos + "px";
+        key.style.width = (whiteKeyWidth * 0.6) + "px";
+        const enharmonic = getEnharmonic(keyData.note);
+        key.innerHTML = `<div style="text-align:center;font-size:0.8em;">${keyData.note}<br><span style="font-size:1.0em;">${enharmonic}</span></div>`;
+        key.addEventListener("click", (event) => {
+          event.stopPropagation();
+          selectRange(parseInt(key.dataset.midi), key);
+        });
+        keyboardDiv.appendChild(key);
+      });
+    }
+    
+    function selectRange(midi, keyElement) {
+      if (selectedLowerMidi === null) {
+        selectedLowerMidi = midi;
+        keyElement.classList.add("selected");
+        selectedElements.push(keyElement);
+      } else if (selectedUpperMidi === null) {
+        if (midi > selectedLowerMidi) {
+          selectedUpperMidi = midi;
+          keyElement.classList.add("selected");
+          selectedElements.push(keyElement);
+        } else {
+          selectedElements.forEach(el => {
+            if (parseInt(el.dataset.midi) === selectedLowerMidi) {
+              el.classList.remove("selected");
+            }
+          });
+          selectedLowerMidi = midi;
+          keyElement.classList.add("selected");
+          selectedElements.push(keyElement);
+        }
+      } else {
+        alert("Tonintervallet är redan satt. Klicka på 'Reset Intervall' för att välja ett nytt intervall.");
+      }
+    }
+    
+    createKeyboard();
+    window.addEventListener("resize", createKeyboard);
+    
+    function midiToFrequency(midi) {
+      return 440 * Math.pow(2, (midi - 69) / 12);
+    }
+    
+    function createReverbBuffer(context, duration = 2, decay = 2) {
+      const sampleRate = context.sampleRate;
+      const length = sampleRate * duration;
+      const impulse = context.createBuffer(2, length, sampleRate);
+      for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+        const channelData = impulse.getChannelData(channel);
+        for (let i = 0; i < length; i++) {
+          channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+        }
+      }
+      return impulse;
+    }
+    
+    // Ambient noise
+    function startAmbientNoise() {
+      if (ambientNoiseSource) return;
+      const bufferSize = 2 * audioCtx.sampleRate;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+      ambientNoiseSource = audioCtx.createBufferSource();
+      ambientNoiseSource.buffer = noiseBuffer;
+      ambientNoiseSource.loop = true;
+      ambientNoiseGain = audioCtx.createGain();
+      ambientNoiseGain.gain.setValueAtTime(parseFloat(ambientNoiseVolumeInput.value), audioCtx.currentTime);
+      ambientNoiseSource.connect(ambientNoiseGain);
+      ambientNoiseGain.connect(masterGain);
+      ambientNoiseSource.start();
+    }
+    
+    function stopAmbientNoise() {
+      if (ambientNoiseSource) {
+        ambientNoiseSource.stop();
+        ambientNoiseSource.disconnect();
+        ambientNoiseSource = null;
+      }
+    }
+    
+    function startFilterLFO() {
+      if (!filterNode) return;
+      filterLFO = audioCtx.createOscillator();
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.setValueAtTime(parseFloat(filterLFODepthInput.value), audioCtx.currentTime);
+      filterLFO.frequency.setValueAtTime(parseFloat(filterLFORateInput.value), audioCtx.currentTime);
+      filterLFO.connect(lfoGain);
+      lfoGain.connect(filterNode.frequency);
+      filterLFO.start();
+    }
+    
+    function stopFilterLFO() {
+      if (filterLFO) {
+        filterLFO.stop();
+        filterLFO.disconnect();
+        filterLFO = null;
+      }
+    }
+    
+    // spawnTone tar toneDuration som parameter
+    function spawnTone(toneDuration) {
+      if (intervalMode === "random") {
+        setRandomInterval();
+      }
+      if (selectedLowerMidi === null || selectedUpperMidi === null) {
+        selectedLowerMidi = 60;
+        selectedUpperMidi = 83;
+      }
+      
+      const oscType = oscillatorSelect.value;
+      let lowerMidi = selectedLowerMidi;
+      let upperMidi = selectedUpperMidi;
+      if (lowerMidi >= upperMidi) { upperMidi = lowerMidi + 1; }
+      const randomMidi = Math.floor(Math.random() * (upperMidi - lowerMidi + 1)) + lowerMidi;
+      const frequency = midiToFrequency(randomMidi);
+      
+      const osc = audioCtx.createOscillator();
+      osc.type = oscType;
+      osc.frequency.value = frequency;
+      osc.detune.value = parseFloat(detuneInput.value);
+      
+      const attack = parseFloat(attackTimeInput.value);
+      const decay = parseFloat(decayTimeInput.value);
+      const sustain = parseFloat(sustainLevelInput.value);
+      const release = parseFloat(releaseTimeInput.value);
+      const sustainTime = Math.max(0, toneDuration - attack - decay - release);
+      
+      const toneVolume = autoVolume ? (Math.random() * 0.7 + 0.3) : 1;
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      
+      const now = audioCtx.currentTime;
+      gainNode.gain.linearRampToValueAtTime(toneVolume, now + attack);
+      gainNode.gain.linearRampToValueAtTime(toneVolume * sustain, now + attack + decay);
+      gainNode.gain.setValueAtTime(toneVolume * sustain, now + attack + decay + sustainTime);
+      gainNode.gain.linearRampToValueAtTime(0, now + toneDuration);
+      
+      osc.connect(gainNode);
+      
+      const dryGain = audioCtx.createGain();
+      const wetGain = audioCtx.createGain();
+      dryGain.gain.setValueAtTime(1 - parseFloat(reverbMixInput.value), audioCtx.currentTime);
+      wetGain.gain.setValueAtTime(parseFloat(reverbMixInput.value), audioCtx.currentTime);
+      
+      gainNode.connect(dryGain);
+      gainNode.connect(wetGain);
+      
+      let effectedWetGain = wetGain;
+      let chorusFlangerCleanup = null;
+      const chorusMix = parseFloat(chorusMixInput.value);
+      const flangerMix = parseFloat(flangerMixInput.value);
+      if (chorusMix > 0 || flangerMix > 0) {
+        const result = applyChorusAndFlanger(wetGain);
+        effectedWetGain = result.node;
+        chorusFlangerCleanup = result.cleanup;
+      }
+      
+      if (!convolverNode) {
+        convolverNode = audioCtx.createConvolver();
+        convolverNode.buffer = createReverbBuffer(audioCtx, 2, parseFloat(reverbDecayInput.value));
+      }
+      
+      effectedWetGain.connect(convolverNode);
+      
+      let finalDry = dryGain, finalWet = wetGain;
+      let panner = null, rotorLFO = null;
+      if (enableStereoPanningCheckbox.checked || enableRotorCheckbox.checked) {
+        panner = audioCtx.createStereoPanner();
+        if (enableRotorCheckbox.checked) {
+          rotorLFO = audioCtx.createOscillator();
+          const rotorLFOGain = audioCtx.createGain();
+          let lfoFreq;
+          if (rotorModeSelect.value === "custom") {
+            const note = rotorNoteSelect.value;
+            switch(note) {
+              case "whole": lfoFreq = 0.5; break;
+              case "half": lfoFreq = 1; break;
+              case "quarter": lfoFreq = 2; break;
+              case "eighth": lfoFreq = 4; break;
+              case "sixteenth": lfoFreq = 8; break;
+              default: lfoFreq = 2;
+            }
+          } else {
+            lfoFreq = Math.random() * (4 - 0.5) + 0.5;
+          }
+          rotorLFO.frequency.setValueAtTime(lfoFreq, audioCtx.currentTime);
+          const panRange = parseFloat(panningRangeInput.value);
+          rotorLFOGain.gain.setValueAtTime(panRange, audioCtx.currentTime);
+          rotorLFO.connect(rotorLFOGain);
+          rotorLFOGain.connect(panner.pan);
+          rotorLFO.start();
+        } else {
+          panner.pan.setValueAtTime((Math.random() * 2 - 1) * parseFloat(panningRangeInput.value), audioCtx.currentTime);
+        }
+        dryGain.connect(panner);
+        wetGain.disconnect();
+        wetGain.connect(panner);
+        finalDry = panner;
+        finalWet = panner;
+      }
+      
+      finalDry.connect(effectsInput);
+      convolverNode.connect(effectsInput);
+      
+      if (showNotes) {
+        const keyElement = document.querySelector(`[data-midi="${randomMidi}"]`);
+        if (keyElement) {
+          keyElement.classList.add("playing-tone");
+          setTimeout(() => {
+            keyElement.classList.remove("playing-tone");
+          }, toneDuration * 1000);
+        }
+      }
+      
+      const startTime = audioCtx.currentTime;
+      osc.start(startTime);
+      osc.stop(startTime + toneDuration);
+      osc.onended = () => {
+        osc.disconnect();
+        gainNode.disconnect();
+        dryGain.disconnect();
+        wetGain.disconnect();
+        if (panner) { panner.disconnect(); }
+        if (rotorLFO) { rotorLFO.stop(); rotorLFO.disconnect(); }
+        if (chorusFlangerCleanup) { chorusFlangerCleanup(); }
+      };
+      
+      return { osc, gainNode, dryGain, wetGain };
+    }
+    
+    function playTones() {
+      let computedToneDuration;
+      if (document.getElementById('enableRandomNoteLength').checked) {
+        const minVal = parseFloat(document.getElementById('toneDurationRandomMin').value);
+        const maxVal = parseFloat(document.getElementById('toneDurationRandomMax').value);
+        computedToneDuration = (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) ? 
+          (Math.random() * (maxVal - minVal) + minVal) : parseFloat(toneDurationInput.value) || 10;
+      } else {
+        computedToneDuration = parseFloat(toneDurationInput.value) || 10;
+      }
+      
+      let computedSilenceDuration;
+      if (document.getElementById('enableRandomPauseLength').checked) {
+        const minPause = parseFloat(document.getElementById('silenceDurationRandomMin').value);
+        const maxPause = parseFloat(document.getElementById('silenceDurationRandomMax').value);
+        computedSilenceDuration = (!isNaN(minPause) && !isNaN(maxPause) && minPause < maxPause) ?
+          (Math.random() * (maxPause - minPause) + minPause) : parseFloat(silenceDurationInput.value) || 10;
+      } else {
+        computedSilenceDuration = parseFloat(silenceDurationInput.value) || 10;
+      }
+      
+      const mode = modeSelect.value;
+      if (mode === "mono") {
+        activeTones.forEach(tone => { try { tone.osc.stop(); } catch (e) {} tone.osc.disconnect(); });
+        activeTones = [];
+        activeTones.push(spawnTone(computedToneDuration));
+      } else if (mode === "poly") {
+        let density;
+        const fixedPolyDensityCheckbox = document.getElementById('fixedPolyDensity');
+        const randomPolyDensityCheckbox = document.getElementById('randomPolyDensity');
+        if (fixedPolyDensityCheckbox && fixedPolyDensityCheckbox.checked) {
+          const fixedMax = parseInt(document.getElementById('fixedPolyDensityValue').value) || 5;
+          if (fixedPolyDensityCache === null) {
+            fixedPolyDensityCache = Math.floor(Math.random() * (fixedMax - 2 + 1)) + 2;
+          }
+          density = fixedPolyDensityCache;
+        } else if (randomPolyDensityCheckbox && randomPolyDensityCheckbox.checked) {
+          const randomMax = parseInt(document.getElementById('randomPolyDensityValue').value) || 4;
+          density = Math.floor(Math.random() * (randomMax - 2 + 1)) + 2;
+          fixedPolyDensityCache = null;
+        } else {
+          density = parseInt(polyDensityInput.value) || 3;
+          fixedPolyDensityCache = null;
+        }
+        for (let i = 0; i < density; i++) {
+          activeTones.push(spawnTone(computedToneDuration));
+        }
+      }
+      
+      setTimeout(playTones, (computedToneDuration + computedSilenceDuration) * 1000);
+    }
+    
+    startButton.addEventListener("click", () => {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(parseFloat(masterVolumeInput.value), audioCtx.currentTime);
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === "suspended") { audioCtx.resume(); }
+      
+      effectsInput = audioCtx.createGain();
+      effectsInput.gain.setValueAtTime(1, audioCtx.currentTime);
+      
+      let dryBranch = audioCtx.createGain();
+      effectsInput.connect(dryBranch);
+      dryBranch.connect(masterGain);
+      
+      if (enableFilterLFOCheckbox.checked) { startFilterLFO(); } else { stopFilterLFO(); }
+      if (enableAmbientNoiseCheckbox.checked) { startAmbientNoise(); } else { stopAmbientNoise(); }
+      
+      playTones();
+      startButton.disabled = true;
+      stopButton.disabled = false;
+    });
+    
+    stopButton.addEventListener("click", () => {
+      const fadeOutTime = 0.5;
+      const now = audioCtx.currentTime;
+      activeTones.forEach(tone => {
+        tone.gainNode.gain.cancelScheduledValues(now);
+        tone.gainNode.gain.setValueAtTime(tone.gainNode.gain.value, now);
+        tone.gainNode.gain.linearRampToValueAtTime(0, now + fadeOutTime);
+        tone.osc.stop(now + fadeOutTime);
+      });
+      setTimeout(() => {
+        activeTones.forEach(tone => { try { tone.osc.disconnect(); } catch (e) {} });
+        activeTones = [];
+        stopAmbientNoise();
+        stopFilterLFO();
+        document.querySelectorAll(".white-key, .black-key").forEach(el => el.classList.remove("selected", "playing-tone"));
+        selectedLowerMidi = null;
+        selectedUpperMidi = null;
+        intervalMode = "none";
+        if (audioCtx) { audioCtx.close(); audioCtx = null; convolverNode = null; masterGain = null; }
+        startButton.disabled = false;
+        stopButton.disabled = true;
+      }, fadeOutTime * 1000);
+    });
+    
+    const saveProjectBtn = document.getElementById("saveProject");
+    const loadProjectBtn = document.getElementById("loadProject");
+    const projectFileInput = document.getElementById("projectFileInput");
+    
+    saveProjectBtn.addEventListener("click", () => {
+      const settings = {};
+      document.querySelectorAll("input[id], select[id]").forEach(el => {
+        settings[el.id] = (el.type === "checkbox") ? el.checked : el.value;
+      });
+      const jsonStr = JSON.stringify(settings, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "project.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    
+    loadProjectBtn.addEventListener("click", () => {
+      projectFileInput.click();
+    });
+    
+    projectFileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const settings = JSON.parse(e.target.result);
+            Object.keys(settings).forEach(key => {
+              const el = document.getElementById(key);
+              if (el) {
+                el.type === "checkbox" ? el.checked = settings[key] : el.value = settings[key];
+                if (el.tagName.toLowerCase() === "input" && el.type === "range") {
+                  el.dispatchEvent(new Event('input'));
+                }
+                if (el.tagName.toLowerCase() === "select") {
+                  el.dispatchEvent(new Event('change'));
+                }
+              }
+            });
+          } catch(err) {
+            alert("Fel vid inläsning av projektfil!");
+          }
+        };
+        reader.readAsText(file);
+      }
+    });
+    
+    toneSpreadInput.addEventListener('input', () => {
+      toneSpreadValueDisplay.innerText = toneSpreadInput.value;
+    });
+    reverbMixInput.addEventListener('input', () => {
+      reverbMixValueDisplay.innerText = parseFloat(reverbMixInput.value).toFixed(2);
+    });
+    reverbDecayInput.addEventListener('input', () => {
+      reverbDecayValueDisplay.innerText = parseFloat(reverbDecayInput.value).toFixed(1);
+    });
+    masterVolumeInput.addEventListener('input', () => {
+      masterVolumeValueDisplay.innerText = parseFloat(masterVolumeInput.value).toFixed(2);
+    });
+    filterLFORateInput.addEventListener('input', () => {
+      filterLFORateValueDisplay.innerText = parseFloat(filterLFORateInput.value).toFixed(2);
+    });
+    filterLFODepthInput.addEventListener('input', () => {
+      filterLFODepthValueDisplay.innerText = filterLFODepthInput.value;
+    });
+    ambientNoiseVolumeInput.addEventListener('input', () => {
+      ambientNoiseVolumeValueDisplay.innerText = parseFloat(ambientNoiseVolumeInput.value).toFixed(2);
+    });
+    panningRangeInput.addEventListener('input', () => {
+      panningRangeValueDisplay.innerText = parseFloat(panningRangeInput.value).toFixed(2);
+    });
+  </script>
+</body>
+</html>
